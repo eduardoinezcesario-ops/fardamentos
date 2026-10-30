@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciador de Fardamentos</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+    <!-- Header / Navbar -->
+    <header class="bg-indigo-600 text-white shadow-lg sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row justify-between items-center gap-3">
+            <div class="flex items-center gap-3">
+                <div class="bg-white/20 p-2.5 rounded-xl backdrop-blur-sm">
+                    <i class="fa-solid fa-shirt text-2xl text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight">Fardamento Control</h1>
+                    <p class="text-xs text-indigo-200">Gestão de Produção e Entregas</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+                <button onclick="openModal()" class="w-full sm:w-auto bg-emerald-500 hover:bg-emerald-600 active:bg-emerald-700 text-white font-medium px-4 py-2.5 rounded-xl shadow-md transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-plus"></i>
+                    <span>Novo Pedido</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
+
+        <!-- Dashboard Cards -->
+        <section class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5 mb-6">
+            <!-- Total -->
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold uppercase text-slate-400">Total de Pedidos</p>
+                    <h3 id="stat-total" class="text-2xl font-bold text-slate-800 mt-1">0</h3>
+                </div>
+                <div class="w-11 h-11 bg-slate-100 text-slate-600 rounded-xl flex items-center justify-center">
+                    <i class="fa-solid fa-list-check text-lg"></i>
+                </div>
+            </div>
+
+            <!-- Em Produção -->
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold uppercase text-amber-500">Em Produção</p>
+                    <h3 id="stat-producing" class="text-2xl font-bold text-amber-600 mt-1">0</h3>
+                </div>
+                <div class="w-11 h-11 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center">
+                    <i class="fa-solid fa-gears text-lg"></i>
+                </div>
+            </div>
+
+            <!-- Pronto para Retirada -->
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold uppercase text-blue-500">Prontos p/ Retirada</p>
+                    <h3 id="stat-ready" class="text-2xl font-bold text-blue-600 mt-1">0</h3>
+                </div>
+                <div class="w-11 h-11 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center">
+                    <i class="fa-solid fa-box-archive text-lg"></i>
+                </div>
+            </div>
+
+            <!-- Entregues -->
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-between">
+                <div>
+                    <p class="text-xs font-semibold uppercase text-emerald-500">Entregues</p>
+                    <h3 id="stat-delivered" class="text-2xl font-bold text-emerald-600 mt-1">0</h3>
+                </div>
+                <div class="w-11 h-11 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center">
+                    <i class="fa-solid fa-circle-check text-lg"></i>
+                </div>
+            </div>
+        </section>
+
+        <!-- Search & Filter Bar -->
+        <section class="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 mb-6 flex flex-col md:flex-row gap-4 items-center justify-between">
+            <!-- Search Input -->
+            <div class="relative w-full md:w-96">
+                <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                <input type="text" id="searchInput" oninput="renderOrders()" placeholder="Buscar cliente, ID ou descrição..." class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+            </div>
+
+            <!-- Filter Tabs -->
+            <div class="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto pb-2 md:pb-0 scrollbar-none">
+                <button onclick="setFilter('all')" id="filter-all" class="filter-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition bg-indigo-600 text-white">
+                    Todos
+                </button>
+                <button onclick="setFilter('producao')" id="filter-producao" class="filter-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition bg-slate-100 text-slate-600 hover:bg-slate-200">
+                    Em Produção
+                </button>
+                <button onclick="setFilter('pronto')" id="filter-pronto" class="filter-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition bg-slate-100 text-slate-600 hover:bg-slate-200">
+                    Pronto p/ Retirada
+                </button>
+                <button onclick="setFilter('entregue')" id="filter-entregue" class="filter-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition bg-slate-100 text-slate-600 hover:bg-slate-200">
+                    Entregue
+                </button>
+            </div>
+        </section>
+
+        <!-- Orders Grid / List -->
+        <section id="ordersContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <!-- Os cartões de pedidos serão renderizados via JavaScript -->
+        </section>
+
+        <!-- Empty State -->
+        <div id="emptyState" class="hidden text-center py-16 bg-white rounded-2xl border border-dashed border-slate-200">
+            <div class="w-16 h-16 bg-slate-50 text-slate-400 rounded-full flex items-center justify-center mx-auto mb-3">
+                <i class="fa-regular fa-folder-open text-2xl"></i>
+            </div>
+            <h3 class="text-base font-semibold text-slate-700">Nenhum pedido encontrado</h3>
+            <p class="text-sm text-slate-400 mt-1">Tente ajustar a busca ou cadastre um novo fardamento.</p>
+        </div>
+    </main>
+
+    <!-- Modal Form (Cadastrar / Editar) -->
+    <div id="orderModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden transition-opacity opacity-0">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg overflow-hidden transform transition-all scale-95" id="modalContent">
+            
+            <!-- Modal Header -->
+            <div class="bg-slate-50 px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+                <h3 id="modalTitle" class="text-lg font-bold text-slate-800">Novo Pedido de Fardamento</h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Modal Form -->
+            <form id="orderForm" onsubmit="handleSaveOrder(event)" class="p-6 space-y-4">
+                <input type="hidden" id="orderId">
+
+                <!-- Nome do Cliente -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Nome do Cliente *</label>
+                    <input type="text" id="clientName" required placeholder="Ex: João da Silva / Empresa X" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                </div>
+
+                <!-- Telefone / Contato -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Telefone / WhatsApp</label>
+                    <input type="text" id="clientPhone" placeholder="Ex: (88) 99999-9999" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                </div>
+
+                <!-- Descrição do Fardamento -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Descrição do Fardamento *</label>
+                    <textarea id="uniformDesc" required rows="3" placeholder="Ex: 3 Camisas Polo Azuis Tam. M com Bordado no peito + 2 Calças Brim Tam. 42" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition"></textarea>
+                </div>
+
+                <!-- Datas (Recebimento & Prazo) -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Data de Recebimento</label>
+                        <input type="date" id="receivedDate" required class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Prazo Previsto</label>
+                        <input type="date" id="dueDate" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                    </div>
+                </div>
+
+                <!-- Status Inicial -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Status Atual</label>
+                    <select id="orderStatus" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                        <option value="producao">Em Produção</option>
+                        <option value="pronto">Pronto para Retirada</option>
+                        <option value="entregue">Entregue ao Cliente</option>
+                    </select>
+                </div>
+
+                <!-- Observações/Valor (Opcional) -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Observações / Valor (Opcional)</label>
+                    <input type="text" id="orderNotes" placeholder="Ex: Pago 50% adiantado / Entregar na recepção" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition">
+                </div>
+
+                <!-- Modal Actions -->
+                <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
+                    <button type="button" onclick="closeModal()" class="px-4 py-2.5 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-100 transition">Cancelar</button>
+                    <button type="submit" class="px-5 py-2.5 rounded-xl text-sm font-medium bg-indigo-600 hover:bg-indigo-700 text-white shadow-md transition">Salvar Pedido</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 translate-y-20 opacity-0 transition-all duration-300 z-50">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400 text-lg"></i>
+        <span id="toastMessage" class="text-sm font-medium">Ação realizada com sucesso!</span>
+    </div>
+
+    <!-- Script Application Logic -->
+    <script>
+        // Array principal armazenando os pedidos
+        let orders = JSON.parse(localStorage.getItem('fardamento_orders')) || [];
+        let currentFilter = 'all';
+
+        // Executado ao carregar a página
+        window.onload = function() {
+            // Se o localStorage estiver vazio na primeira execução, adiciona exemplos fictícios
+            if (orders.length === 0) {
+                orders = [
+                    {
+                        id: 'FARD-' + Math.floor(1000 + Math.random() * 9000),
+                        clientName: 'Carlos Eduardo',
+                        clientPhone: '(88) 98822-1144',
+                        uniformDesc: '2 Camisas Polo com Logotipo bordado na manga + 1 Boné',
+                        receivedDate: new Date().toISOString().split('T')[0],
+                        dueDate: new Date(Date.now() + 5*86400000).toISOString().split('T')[0],
+                        status: 'producao',
+                        notes: 'Entregar com nota fiscal'
+                    },
+                    {
+                        id: 'FARD-' + Math.floor(1000 + Math.random() * 9000),
+                        clientName: 'Maria Oliveira (Restaurante Sabor)',
+                        clientPhone: '(88) 99777-3322',
+                        uniformDesc: '5 Aventais Pretos com Silk frontal + 5 Dômãs Brancos',
+                        receivedDate: new Date(Date.now() - 3*86400000).toISOString().split('T')[0],
+                        dueDate: new Date().toISOString().split('T')[0],
+                        status: 'pronto',
+                        notes: 'Sinal de 50% pago'
+                    }
+                ];
+                saveOrdersToStorage();
+            }
+
+            // Define data padrão de hoje no formulário
+            document.getElementById('receivedDate').value = new Date().toISOString().split('T')[0];
+
+            renderOrders();
+            updateStats();
+        };
+
+        // Salva array no LocalStorage
+        function saveOrdersToStorage() {
+            localStorage.setItem('fardamento_orders', JSON.stringify(orders));
+        }
+
+        // Renderiza lista de pedidos e aplica filtros/busca
+        function renderOrders() {
+            const container = document.getElementById('ordersContainer');
+            const emptyState = document.getElementById('emptyState');
+            const searchVal = document.getElementById('searchInput').value.toLowerCase().trim();
+
+            container.innerHTML = '';
+
+            const filteredOrders = orders.filter(order => {
+                // Filtro por tab status
+                const matchesFilter = (currentFilter === 'all') || (order.status === currentFilter);
+
+                // Filtro por busca (Nome, ID ou Descrição)
+                const matchesSearch = order.clientName.toLowerCase().includes(searchVal) ||
+                                      order.id.toLowerCase().includes(searchVal) ||
+                                      order.uniformDesc.toLowerCase().includes(searchVal);
+
+                return matchesFilter && matchesSearch;
+            });
+
+            if (filteredOrders.length === 0) {
+                emptyState.classList.remove('hidden');
+            } else {
+                emptyState.classList.add('hidden');
+                
+                // Ordenar: Prontos primeiro, depois Em Produção, depois Entregues
+                const priority = { 'pronto': 1, 'producao': 2, 'entregue': 3 };
+                filteredOrders.sort((a, b) => priority[a.status] - priority[b.status]);
+
+                filteredOrders.forEach(order => {
+                    container.appendChild(createOrderCard(order));
+                });
+            }
+
+            updateStats();
+        }
+
+        // Cria o elemento HTML individual do pedido (Card)
+        function createOrderCard(order) {
+            const card = document.createElement('div');
+            card.className = "bg-white rounded-2xl shadow-sm border border-slate-100 p-5 flex flex-col justify-between hover:shadow-md transition relative group";
+
+            // Status Badge Config
+            let statusBadge = '';
+            let borderAccent = '';
+
+            if (order.status === 'producao') {
+                statusBadge = `<span class="bg-amber-50 text-amber-700 border border-amber-200/60 px-2.5 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5">
+                                <i class="fa-solid fa-spinner animate-spin text-amber-500"></i> Em Produção
+                               </span>`;
+                borderAccent = 'border-l-4 border-l-amber-500';
+            } else if (order.status === 'pronto') {
+                statusBadge = `<span class="bg-blue-50 text-blue-700 border border-blue-200/60 px-2.5 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5">
+                                <i class="fa-solid fa-box text-blue-500"></i> PRONTO PARA RETIRADA
+                               </span>`;
+                borderAccent = 'border-l-4 border-l-blue-500';
+            } else {
+                statusBadge = `<span class="bg-emerald-50 text-emerald-700 border border-emerald-200/60 px-2.5 py-1 rounded-full text-xs font-semibold flex items-center gap-1.5">
+                                <i class="fa-solid fa-check text-emerald-500"></i> Entregue
+                               </span>`;
+                borderAccent = 'border-l-4 border-l-emerald-500';
+            }
+
+            // Formatação de Datas
+            const formatDate = (dateStr) => {
+                if (!dateStr) return 'Não inf.';
+                const [y, m, d] = dateStr.split('-');
+                return `${d}/${m}/${y}`;
+            };
+
+            card.innerHTML = `
+                <div class="${borderAccent} pl-1">
+                    <!-- Head Card -->
+                    <div class="flex items-start justify-between gap-2 mb-3">
+                        <div>
+                            <span class="text-[10px] font-bold text-slate-400 tracking-wider uppercase">${order.id}</span>
+                            <h4 class="text-base font-bold text-slate-800 leading-snug break-words">${escapeHtml(order.clientName)}</h4>
+                            ${order.clientPhone ? `<p class="text-xs text-slate-500 mt-0.5"><i class="fa-brands fa-whatsapp text-emerald-500 mr-1"></i>${escapeHtml(order.clientPhone)}</p>` : ''}
+                        </div>
+                        <div>${statusBadge}</div>
+                    </div>
+
+                    <!-- Fardamento Info -->
+                    <div class="bg-slate-50 p-3 rounded-xl mb-4 border border-slate-100">
+                        <p class="text-xs font-medium text-slate-700 line-clamp-3">${escapeHtml(order.uniformDesc)}</p>
+                        ${order.notes ? `<p class="text-[11px] text-slate-500 italic mt-2 border-t border-slate-200/60 pt-1 flex items-center gap-1"><i class="fa-regular fa-note-sticky text-slate-400"></i> ${escapeHtml(order.notes)}</p>` : ''}
+                    </div>
+
+                    <!-- Dates -->
+                    <div class="flex items-center justify-between text-xs text-slate-500 mb-4 px-1">
+                        <div>
+                            <span class="block text-[10px] text-slate-400 uppercase font-semibold">Recebido em</span>
+                            <span class="font-medium text-slate-700">${formatDate(order.receivedDate)}</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="block text-[10px] text-slate-400 uppercase font-semibold">Prazo</span>
+                            <span class="font-medium ${order.status !== 'entregue' ? 'text-indigo-600 font-semibold' : 'text-slate-700'}">${formatDate(order.dueDate)}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card Actions -->
+                <div class="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                    <!-- Status Action Quick Change -->
+                    <div class="flex-1">
+                        ${order.status === 'producao' ? `
+                            <button onclick="changeStatus('${order.id}', 'pronto')" class="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-semibold py-2 px-3 rounded-xl transition flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-box-check"></i> Marcar como PRONTO
+                            </button>
+                        ` : order.status === 'pronto' ? `
+                            <button onclick="changeStatus('${order.id}', 'entregue')" class="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold py-2 px-3 rounded-xl transition flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-hand-holding-hand"></i> Marcar ENTREGUE
+                            </button>
+                        ` : `
+                            <button onclick="changeStatus('${order.id}', 'producao')" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold py-2 px-3 rounded-xl transition flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-rotate-left"></i> Reabrir Produção
+                            </button>
+                        `}
+                    </div>
+
+                    <!-- Edit and Delete -->
+                    <div class="flex items-center gap-1">
+                        <button onclick="editOrder('${order.id}')" title="Editar Pedido" class="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition">
+                            <i class="fa-solid fa-pen-to-square"></i>
+                        </button>
+                        <button onclick="deleteOrder('${order.id}')" title="Excluir Pedido" class="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            return card;
+        }
+
+        // Atualiza os contadores estatísticos do topo
+        function updateStats() {
+            document.getElementById('stat-total').innerText = orders.length;
+            document.getElementById('stat-producing').innerText = orders.filter(o => o.status === 'producao').length;
+            document.getElementById('stat-ready').innerText = orders.filter(o => o.status === 'pronto').length;
+            document.getElementById('stat-delivered').innerText = orders.filter(o => o.status === 'entregue').length;
+        }
+
+        // Altera o filtro ativo por Tab
+        function setFilter(filter) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('bg-indigo-600', 'text-white');
+                btn.classList.add('bg-slate-100', 'text-slate-600');
+            });
+
+            const activeBtn = document.getElementById(`filter-${filter}`);
+            activeBtn.classList.remove('bg-slate-100', 'text-slate-600');
+            activeBtn.classList.add('bg-indigo-600', 'text-white');
+
+            renderOrders();
+        }
+
+        // Alteração rápida de status
+        function changeStatus(id, newStatus) {
+            const order = orders.find(o => o.id === id);
+            if (order) {
+                order.status = newStatus;
+                saveOrdersToStorage();
+                renderOrders();
+                showToast('Status atualizado com sucesso!');
+            }
+        }
+
+        // Abrir Modal de Cadastro
+        function openModal() {
+            document.getElementById('orderForm').reset();
+            document.getElementById('orderId').value = '';
+            document.getElementById('modalTitle').innerText = 'Novo Pedido de Fardamento';
+            document.getElementById('receivedDate').value = new Date().toISOString().split('T')[0];
+
+            const modal = document.getElementById('orderModal');
+            const content = document.getElementById('modalContent');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+                content.classList.remove('scale-95');
+                content.classList.add('scale-100');
+            }, 10);
+        }
+
+        // Fechar Modal
+        function closeModal() {
+            const modal = document.getElementById('orderModal');
+            const content = document.getElementById('modalContent');
+            content.classList.remove('scale-100');
+            content.classList.add('scale-95');
+            modal.classList.add('opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+            }, 200);
+        }
+
+        // Salvar Pedido (Novo ou Edição)
+        function handleSaveOrder(e) {
+            e.preventDefault();
+
+            const id = document.getElementById('orderId').value;
+            const clientName = document.getElementById('clientName').value.trim();
+            const clientPhone = document.getElementById('clientPhone').value.trim();
+            const uniformDesc = document.getElementById('uniformDesc').value.trim();
+            const receivedDate = document.getElementById('receivedDate').value;
+            const dueDate = document.getElementById('dueDate').value;
+            const status = document.getElementById('orderStatus').value;
+            const notes = document.getElementById('orderNotes').value.trim();
+
+            if (id) {
+                // Editar existente
+                const index = orders.findIndex(o => o.id === id);
+                if (index !== -1) {
+                    orders[index] = { ...orders[index], clientName, clientPhone, uniformDesc, receivedDate, dueDate, status, notes };
+                    showToast('Pedido atualizado com sucesso!');
+                }
+            } else {
+                // Criar Novo Pedido
+                const newOrder = {
+                    id: 'FARD-' + Math.floor(1000 + Math.random() * 9000),
+                    clientName,
+                    clientPhone,
+                    uniformDesc,
+                    receivedDate,
+                    dueDate,
+                    status,
+                    notes
+                };
+                orders.unshift(newOrder);
+                showToast('Novo fardamento cadastrado!');
+            }
+
+            saveOrdersToStorage();
+            renderOrders();
+            closeModal();
+        }
+
+        // Carregar dados no Modal para Edição
+        function editOrder(id) {
+            const order = orders.find(o => o.id === id);
+            if (!order) return;
+
+            document.getElementById('orderId').value = order.id;
+            document.getElementById('clientName').value = order.clientName;
+            document.getElementById('clientPhone').value = order.clientPhone || '';
+            document.getElementById('uniformDesc').value = order.uniformDesc;
+            document.getElementById('receivedDate').value = order.receivedDate;
+            document.getElementById('dueDate').value = order.dueDate || '';
+            document.getElementById('orderStatus').value = order.status;
+            document.getElementById('orderNotes').value = order.notes || '';
+
+            document.getElementById('modalTitle').innerText = `Editar Pedido (${order.id})`;
+
+            openModal();
+        }
+
+        // Excluir Pedido
+        function deleteOrder(id) {
+            if (confirm('Tem certeza que deseja excluir este registro de fardamento?')) {
+                orders = orders.filter(o => o.id !== id);
+                saveOrdersToStorage();
+                renderOrders();
+                showToast('Pedido removido com sucesso.');
+            }
+        }
+
+        // Mostrar Notificação Toast
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toastMessage').innerText = msg;
+            toast.classList.remove('translate-y-20', 'opacity-0');
+
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        // Auxiliar para evitar Injeção XSS
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>
